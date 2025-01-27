@@ -27,6 +27,12 @@ phases:
       - docker push $REPOSITORY_URI:$IMAGE_TAG
       - echo Docker image pushed to ECR successfully.
 
+      - echo Setting kubectl config for EKS...
+      - aws eks --region $AWS_DEFAULT_REGION update-kubeconfig --name $EKS_CLUSTER_NAME
+      - kubectl apply -f k8s/deployment.yaml
+      - kubectl apply -f k8s/service.yaml
+      - echo Kubernetes deployment complete.
+
 artifacts:
   files:
     - '**/*'
