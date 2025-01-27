@@ -2,14 +2,13 @@ provider "aws" {
   region = var.region
 }
 
-# S3 Backend for Terraform State
+# S3 Backend for Terraform State (without DynamoDB)
 terraform {
   backend "s3" {
-    bucket         = var.s3_bucket
-    key            = "eks/terraform.tfstate"
-    region         = var.s3_region
-    encrypt        = true
-    dynamodb_table = var.dynamodb_table
+    bucket  = var.s3_bucket
+    key     = "eks/terraform.tfstate"
+    region  = var.s3_region
+    encrypt = true
   }
 }
 
@@ -53,6 +52,6 @@ resource "aws_iam_role_policy_attachment" "eks_cluster_policy_attachment" {
 
 # Output for kubectl
 output "kubeconfig" {
-  value = module.eks.kubeconfig
+  value     = module.eks.kubeconfig
   sensitive = true
 }
