@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: game-2048-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: game-2048
+  template:
+    metadata:
+      labels:
+        app: game-2048
+    spec:
+      containers:
+      - name: game-2048-container
+        image: 266735821233.dkr.ecr.us-east-1.amazonaws.com/eks-ecr:latest  # Update this with your ECR image URI
+        ports:
+        - containerPort: 80
