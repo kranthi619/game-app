@@ -1,52 +1,25 @@
 version: 0.2
 
 phases:
-  install:
-    commands:
-      - echo Installing Docker...
-      - yum install -y docker
-      - docker --version
-      - echo Installing eksctl...
-      - curl -LO https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_Linux_amd64.tar.gz
-      - tar -xzf eksctl_Linux_amd64.tar.gz
-      - sudo mv eksctl /usr/local/bin/
-      - eksctl version
-      - echo Installing kubectl...
-      - curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.31.0/2024-09-12/bin/linux/amd64/kubectl
-      - curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.31.0/2024-09-12/bin/linux/amd64/kubectl.sha256
-      - sha256sum -c kubectl.sha256
-      - chmod +x ./kubectl
-      - mkdir -p $HOME/bin && cp ./kubectl $HOME/bin/kubectl && export PATH=$HOME/bin:$PATH
-      - echo 'export PATH=$HOME/bin:$PATH' >> ~/.bashrc
-      - kubectl version --client
-      - echo Installing AWS CLI...
-      - yum install -y aws-cli
-      - aws --version
-
   pre_build:
     commands:
-      - echo Logging into Amazon ECR...
-      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
-      - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME
-      - echo Repository URI is $REPOSITORY_URI
+      - echo Setting AWS region and EKS cluster from environment variables...
+      - echo "Region: $AWS_DEFAULT_REGION"
+      - echo "EKS Cluster Name: $EKS_CLUSTER_NAME"
+      - echo Checking installed versions of eksctl and kubectl...
+      - eksctl version
+      - kubectl version --client
 
   build:
     commands:
-      - echo Building the Docker image...
-      - docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG .
-      - echo Tagging the Docker image...
-      - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:$IMAGE_TAG
+      - echo Updating kubeconfig for the EKS cluster...
+      - aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name $EKS_CLUSTER_NAME
+      - echo Applying Kubernetes manifest...
+      - kubectl apply -f k8s/deployment.yaml
 
   post_build:
     commands:
-      - echo Pushing the Docker image to Amazon ECR...
-      - docker push $REPOSITORY_URI:$IMAGE_TAG
-      - echo Docker image pushed to ECR successfully.
-      - echo Setting kubectl config for EKS...
-      - aws eks --region $AWS_DEFAULT_REGION update-kubeconfig --name $EKS_CLUSTER_NAME
-      - kubectl apply -f k8s/deployment.yaml
-      - kubectl apply -f k8s/service.yaml
-      - echo Kubernetes deployment complete.
+      - echo Build and deployment process completed successfully!
 
 artifacts:
   files:
