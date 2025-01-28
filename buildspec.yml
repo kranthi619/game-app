@@ -5,6 +5,7 @@ phases:
     commands:
       - echo "Setting AWS region and EKS cluster in pre_build stage..."
       - aws eks --region $AWS_DEFAULT_REGION update-kubeconfig --name $EKS_CLUSTER_NAME
+      - aws sts get-caller-identity  # Debugging IAM role
 
   build:
     commands:
