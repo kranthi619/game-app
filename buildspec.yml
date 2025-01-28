@@ -3,31 +3,15 @@ version: 0.2
 phases:
   pre_build:
     commands:
-      - echo "Detecting package manager and installing prerequisites..."
-      - |
-        if command -v yum >/dev/null 2>&1; then
-          sudo yum update -y && sudo yum install -y curl jq;
-        elif command -v apt-get >/dev/null 2>&1; then
-          sudo apt-get update -y && sudo apt-get install -y curl jq;
-        else
-          echo "Package manager not detected, skipping package installation.";
-        fi
-      - echo "Installing kubectl and eksctl..."
-      - curl -s https://amazon-eks.s3.us-west-2.amazonaws.com/1.21.2/2022-03-23/amazon-eksctl-linux-amd64.tar.gz -o eksctl.tar.gz
-      - tar -xzf eksctl.tar.gz
-      - sudo mv eksctl /usr/local/bin
-      - curl -s https://dl.k8s.io/release/v1.21.2/bin/linux/amd64/kubectl -o kubectl
-      - chmod +x kubectl
-      - sudo mv kubectl /usr/local/bin
+      - echo "Setting AWS region and EKS cluster in pre_build stage..."
+      - aws eks --region $AWS_DEFAULT_REGION update-kubeconfig --name $EKS_CLUSTER_NAME
 
   build:
     commands:
-      - echo "Setting AWS region and EKS cluster in build stage..."
-      - echo "Region: $AWS_DEFAULT_REGION"
-      - echo "EKS Cluster Name: $EKS_CLUSTER_NAME"
-      - aws eks --region $AWS_DEFAULT_REGION update-kubeconfig --name $EKS_CLUSTER_NAME
-      - kubectl get svc
+      - echo "Deploying to EKS..."
+      - kubectl apply -f k8s/deployment.yaml
+      - kubectl apply -f k8s/service.yaml
 
   post_build:
     commands:
-      - echo "Build phase completed successfully."
+      - echo "Deployment completed successfully."
