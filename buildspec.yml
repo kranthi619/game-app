@@ -3,46 +3,31 @@ version: 0.2
 phases:
   pre_build:
     commands:
-      - echo "Setting AWS region and EKS cluster in pre-build stage..."
-      - echo "Region: $AWS_DEFAULT_REGION"
-      - echo "EKS Cluster Name: $EKS_CLUSTER_NAME"
-      - echo "Checking eksctl and kubectl versions..."
-      - eksctl version
-      - kubectl version --client=true
-      - echo "Listing files in the repository..."version: 0.2
+      - echo "Detecting package manager and installing prerequisites..."
+      - |
+        if command -v yum >/dev/null 2>&1; then
+          sudo yum update -y && sudo yum install -y curl jq;
+        elif command -v apt-get >/dev/null 2>&1; then
+          sudo apt-get update -y && sudo apt-get install -y curl jq;
+        else
+          echo "Package manager not detected, skipping package installation.";
+        fi
+      - echo "Installing kubectl and eksctl..."
+      - curl -s https://amazon-eks.s3.us-west-2.amazonaws.com/1.21.2/2022-03-23/amazon-eksctl-linux-amd64.tar.gz -o eksctl.tar.gz
+      - tar -xzf eksctl.tar.gz
+      - sudo mv eksctl /usr/local/bin
+      - curl -s https://dl.k8s.io/release/v1.21.2/bin/linux/amd64/kubectl -o kubectl
+      - chmod +x kubectl
+      - sudo mv kubectl /usr/local/bin
 
-phases:
-  pre_build:
-    commands:
-      - echo "Starting pre-build phase..."
-      - echo "Detecting package manager and installing dependencies..."
-      - if command -v yum >/dev/null 2>&1; then sudo yum update -y && sudo yum install -y curl jq; fi
-      - if command -v apt-get >/dev/null 2>&1; then sudo apt-get update && sudo apt-get install -y curl jq; fi
-      - echo "Dependencies installed."
-      - echo "Validating environment variables..."
-      - echo "Region: $AWS_DEFAULT_REGION"
-      - echo "EKS Cluster Name: $EKS_CLUSTER_NAME"
-      - echo "Pre-build phase completed."
-      
   build:
     commands:
-      - echo "Starting build phase..."
-      - echo "Authenticating with EKS cluster..."
-      - aws eks update-kubeconfig --region us-east-1 --name my-eks-cluster
-      - echo "Successfully authenticated with EKS cluster."
-      - echo "Applying Kubernetes manifests..."
-      - kubectl apply -f k8s/deployment
+      - echo "Setting AWS region and EKS cluster in build stage..."
+      - echo "Region: $AWS_DEFAULT_REGION"
+      - echo "EKS Cluster Name: $EKS_CLUSTER_NAME"
+      - aws eks --region $AWS_DEFAULT_REGION update-kubeconfig --name $EKS_CLUSTER_NAME
+      - kubectl get svc
 
-      - ls -R
-  build:
+  post_build:
     commands:
-      - echo "Setting kubectl config for EKS..."
-      - aws eks update-kubeconfig --region us-ezast-1 --name my-eks-cluster
-      - echo "Validating Kubernetes connection..."
-      - kubectl get nodes
-      - echo "Applying Kubernetes manifests..."
-      - kubectl apply -f k8s/deployment.yaml
-      - kubectl apply -f k8s/service.yaml
-artifacts:
-  files:
-    - '**/*'
+      - echo "Build phase completed successfully."
