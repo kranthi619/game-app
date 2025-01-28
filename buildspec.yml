@@ -3,24 +3,16 @@ version: 0.2
 phases:
   pre_build:
     commands:
-      - echo Setting AWS region and EKS cluster from environment variables...
-      - echo "Region: $AWS_DEFAULT_REGION"
-      - echo "EKS Cluster Name: $EKS_CLUSTER_NAME"
-      - echo Checking installed versions of eksctl and kubectl...
+      - echo "Setting AWS region and EKS cluster in pre-build stage..."
+      - echo "Checking eksctl and kubectl versions..."
       - eksctl version
-      - kubectl version --client
-
+      - kubectl version --client=true
   build:
     commands:
-      - echo Updating kubeconfig for the EKS cluster...
+      - echo "Setting kubectl config for EKS..."
       - aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name $EKS_CLUSTER_NAME
-      - echo Applying Kubernetes manifest...
+      - echo "Applying Kubernetes manifests..."
       - kubectl apply -f k8s/deployment.yaml
-
-  post_build:
-    commands:
-      - echo Build and deployment process completed successfully!
-
 artifacts:
   files:
     - '**/*'
